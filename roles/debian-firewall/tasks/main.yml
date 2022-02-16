@@ -1,0 +1,39 @@
+---
+# tasks file for roles/debian-firewall
+#
+- name: UFW instalado en la ultima version
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  loop: "{{ paquetes }}"
+
+- name: Regla por defecto para paquetes entrantes interfaz loopback
+  ufw:
+    interface: lo
+    policy: allow
+    direction: incoming
+
+- name: Regla por defecto para paquetes salientes interfaz loopback
+  ufw:
+    interface: lo
+    policy: allow
+    direction: outgoing
+  
+- name: Politica para interfaz interna
+  ufw:
+    interface: "{{ ansible_enp0s8.device }}"
+    direction: incoming
+    policy: deny
+
+- name: Habilito SSH para interfaz interna
+  ufw:
+    interface: "{{ ansible_enp0s8.device }}"
+    direction: in
+    port: "22"
+    proto: tcp
+    rule: allow
+
+- name: UFW habilitado
+  ufw: 
+    state: enabled   

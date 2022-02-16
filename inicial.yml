@@ -1,0 +1,40 @@
+---
+- hosts: linux
+  remote_user: ansible
+  become: yes
+  become_method: sudo
+
+  tasks:
+
+  - name: Actualizar paquetes en Red Hat
+    dnf: 
+      name: "*"
+      state: latest
+      update_only: yes
+    when: ansible_os_family == "RedHat"
+    notify: Reiniciar servidor
+
+  - name: Actualizar paquetes en Debian
+    apt:
+      name: "*"
+      state: latest
+      update_cache: yes
+    when: ansible_os_family == "Debian"
+    notify: Reiniciar servidor
+
+  - name: Firewall activado con ssh habilitado en Red Hat
+    firewalld:
+      permanent: yes
+      state: enabled
+      port: 22/tcp
+    when: ansible_os_family == "RedHat"
+
+  - include_role:
+      name: debian-firewall
+    when: ansible_os_family == "Debian"
+
+  handlers:
+
+  - name: Reiniciar servidor
+    reboot:
+ 
