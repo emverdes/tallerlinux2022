@@ -1,11 +1,10 @@
-[webserver]
-rocky01		ansible_host=192.168.56.133
+[debian]
 ubuntu01	ansible_host=192.168.56.132
 
-[dbserver]
+[redhat]
 rocky01         ansible_host=192.168.56.133
-ubuntu01        ansible_host=192.168.56.132
 
 [linux:children]
-webserver
-dbserver
+debian
+redhat
+

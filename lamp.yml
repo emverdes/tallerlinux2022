@@ -7,6 +7,7 @@
 #Incluyo archivo de variables en el playbook
   vars_files:
   - ./vars.yml  
+  - ./password.yml
 
   tasks:
 
@@ -25,11 +26,30 @@
     loop: "{{ paquetes_deb }}"
     when: ansible_os_family  == "Debian"
 
+  - name: Crear grupo tomcat
+    group:
+      name: tomcat
+      state: present
+
+  - name: Crear usuario tomcat
+    user:
+      name: tomcat
+      group: tomcat
+      comment: Tomcat server user
+      state: present
+
   - name: Descargar e instalar tomcat
     unarchive:
       src: "{{ tomcat_url }}"
       dest: /opt
       remote_src: yes
+
+  - name: Cambiar dueño del directorio Tomcat
+    file:
+      path: "{{ tomcat_dir }}"
+      owner: tomcat
+      group: tomcat
+      recurse: yes
 
   - name: Instalar servicio Tomcat
     template:
@@ -42,10 +62,41 @@
       name: tomcat
       state: started
       enabled: yes
+      daemon_reload: yes
+
+  - name: Descargar la aplicacion Demo
+    get_url:
+      url: https://aulas.ort.edu.uy/pluginfile.php/642237/mod_page/content/3/todo.war
+      dest: "{{ tomcat_dir }}/webapps/"
+      url_username: "{{ ort_user }}"
+      url_password: "{{ ort_password }}"
+      
+
+  - name: Configuro reverse proxy
+    copy:
+      src: proxy.conf
+      dest: /etc/httpd/conf.d/
+      owner: root
+      group: root
+    when: ansible_os_family == "RedHat"
+
+  - name: Apache iniciado y habilitado
+    systemd:
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_os_family == "RedHat"
+
+  - name: Abrir puerto 80
+    firewalld:
+      service: httpd
+      permanent: yes
+      state: enabled 
+    when: ansible_os_family == "RedHat"
 
   handlers:
 
-  - name: Reinicar Tomcat
+  - name: Reiniciar Tomcat
     systemd:
       daemon_reload: yes
       name: tomcat
